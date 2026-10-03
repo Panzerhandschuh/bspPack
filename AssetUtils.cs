@@ -12,7 +12,6 @@ static class AssetUtils
 
     public static Tuple<List<string>, List<string>> FindMdlMaterialsAndModels(string path, List<int>? skins = null, List<string>? vtxVmts = null)
     {
-        skins ??= [];
         vtxVmts ??= [];
 
         List<string> materials = [];
