@@ -549,15 +549,29 @@ static class AssetUtils
     public static void FindBspPakDependencies(BSP bsp, string tempdir)
     {
         // Search the temp folder to find dependencies of files extracted from the pak file
-        if (Directory.Exists(tempdir))
-            foreach (string file in Directory.EnumerateFiles(tempdir, "*.vmt", SearchOption.AllDirectories))
-            {
-                foreach (string material in FindVmtMaterials(new FileInfo(file).FullName))
-                    bsp.TextureList.Add(material);
+        if (!Directory.Exists(tempdir))
+            return;
 
-                foreach (string material in FindVmtTextures(new FileInfo(file).FullName))
-                    bsp.TextureList.Add(material);
+        foreach (string file in Directory.EnumerateFiles(tempdir, "*.vmt", SearchOption.AllDirectories))
+        {
+            foreach (string material in FindVmtMaterials(new FileInfo(file).FullName))
+                bsp.TextureList.Add(material);
+
+            foreach (string material in FindVmtTextures(new FileInfo(file).FullName))
+                bsp.TextureList.Add(material);
+        }
+
+        // A soundscape that's already packed is kept instead of being replaced by a loose one, and its sounds still get packed
+        foreach (string extension in new[] { ".txt", ".vsc" })
+        {
+            string internalPath = "scripts/soundscapes_" + bsp.File.Name.Replace(".bsp", extension);
+            string externalPath = Path.Combine(tempdir, internalPath);
+            if (File.Exists(externalPath))
+            {
+                bsp.Soundscape = new KeyValuePair<string, string>(internalPath, externalPath);
+                break;
             }
+        }
     }
 
     /// <summary>
@@ -686,7 +700,8 @@ static class AssetUtils
         string internalPath = "scripts/soundscapes_" + bsp.File.Name.Replace(".bsp", ".txt");
         // Soundscapes can have either .txt or .vsc extensions
         string internalPathVsc = "scripts/soundscapes_" + bsp.File.Name.Replace(".bsp", ".vsc");
-        foreach (string source in sourceDirectories)
+        // Already found in the pak file
+        foreach (string source in bsp.Soundscape.Key == default ? sourceDirectories : [])
         {
             string externalPath = source + "/" + internalPath;
             string externalVscPath = source + "/" + internalPathVsc;
